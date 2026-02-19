@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Navigation Menu</title>
+
+  <!-- ============================================================
+       GOOGLE FONTS — Editorial pairing: Playfair Display + DM Sans
+       ============================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet" />
+
+  <!-- ============================================================
+       CSS SECTION
+       — Variables, reset, nav layout, scroll-state transitions,
+         hover micro-interactions, hamburger toggle, mobile menu,
+         demo sections & smooth scroll
+       ============================================================ -->
+  <style>
+    /* --------------------------------------------------------
+       1. CSS CUSTOM PROPERTIES (design tokens)
+       -------------------------------------------------------- */
+    :root {
+      /* Nav — default (transparent / hero) state */
+      --nav-bg:            rgba(0, 0, 0, 0);
+      --nav-text:          #ffffff;
+      --nav-logo-color:    #ffffff;
+
+      /* Nav — scrolled state */
+      --nav-bg-scrolled:   rgba(15, 15, 20, 0.92);
+      --nav-text-scrolled:#e8e4df;
+
+      /* Accent */
+      --accent:            #c9a96e;        /* warm gold */
+      --accent-light:      rgba(201,169,110,0.15);
+
+      /* Hamburger icon */
+      --burger-color:      var(--nav-text);
+
+      /* Typography */
+      --font-display:      'Playfair Display', Georgia, serif;
+      --font-body:         'DM Sans', system-ui, sans-serif;
+
+      /* Transitions */
+      --transition-nav:    0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-hover:  0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* --------------------------------------------------------
+       2. RESET & BASE
+       -------------------------------------------------------- */
+    *, *::before, *::after {
+      box-sizing:  border-box;
+      margin:      0;
+      padding:     0;
+    }
+
+    html {
+      scroll-behavior: smooth;           /* smooth scrolling on anchor clicks */
+    }
+
+    body {
+      font-family:     var(--font-body);
+      background-color:#0f0f14;
+      color:           #e8e4df;
+      line-height:     1.6;
+      overflow-x:      hidden;
+    }
+
+    /* --------------------------------------------------------
+       3. NAVIGATION BAR — fixed, full-width
+       -------------------------------------------------------- */
+    nav {
+      position:          fixed;
+      top:               0;
+      left:              0;
+      width:             100%;
+      z-index:           1000;
+      background-color:  var(--nav-bg);
+      /* shadow is invisible at default; appears on scroll */
+      box-shadow:        0 0 0 rgba(0, 0, 0, 0);
+      transition:        background-color var(--transition-nav),
+                         box-shadow        var(--transition-nav);
+    }
+
+    /* Scrolled state applied via JS class .nav--scrolled */
+    nav.nav--scrolled {
+      --nav-bg:          var(--nav-bg-scrolled);
+      --nav-text:        var(--nav-text-scrolled);
+      --nav-logo-color:  var(--accent);
+      --burger-color:    var(--nav-text-scrolled);
+
+      background-color:  var(--nav-bg-scrolled);
+      box-shadow:        0 1px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Inner container — flex row, space-between */
+    .nav__inner {
+      display:         flex;
+      align-items:     center;
+      justify-content: space-between;
+      max-width:       1200px;
+      margin:          0 auto;
+      padding:         1.25rem 2rem;
+    }
+
+    /* --------------------------------------------------------
+       4. LOGO
+       -------------------------------------------------------- */
+    .nav__logo {
+      font-family:   var(--font-display);
+      font-size:     1.45rem;
+      font-weight:   700;
+      color:         var(--nav-logo-color);
+      text-decoration: none;
+      letter-spacing:-0.02em;
+      transition:    color var(--transition-nav);
+      white-space:   nowrap;
+    }
+
+    /* --------------------------------------------------------
+       5. DESKTOP MENU LIST
+       -------------------------------------------------------- */
+    .nav__list {
+      display:         flex;
+      align-items:     center;
+      gap:             2.5rem;
+      list-style:      none;
+    }
+
+    /* Each link */
+    .nav__link {
+      position:        relative;
+      color:           var(--nav-text);
+      text-decoration: none;
+      font-size:       0.9rem;
+      font-weight:     500;
+      letter-spacing:  0.08em;
+      text-transform:  uppercase;
+      padding:         0.35rem 0;
+      transition:      color var(--transition-hover);
+    }
+
+    /* Animated underline (pseudo-element grows from left) */
+    .nav__link::after {
+      content:        '';
+      position:       absolute;
+      bottom:         0;
+      left:           0;
+      width:          0;
+      height:         1.5px;
+      background:     var(--accent);
+      transition:     width var(--transition-hover);
+    }
+
+    /* Hover state — color shifts to accent, underline expands */
+    .nav__link:hover {
+      color: var(--accent);
+    }
+    .nav__link:hover::after {
+      width: 100%;
+    }
+
+    /* Active / current-section indicator (set via JS on scroll-spy) */
+    .nav__link.nav__link--active {
+      color: var(--accent);
+    }
+    .nav__link.nav__link--active::after {
+      width: 100%;
+    }
+
+    /* CTA button (last item in nav) */
+    .nav__link--cta {
+      background:      var(--accent);
+      color:           #0f0f14 !important;
+      padding:         0.5rem 1.35rem;
+      border-radius:   3px;
+      font-weight:     600;
+      transition:      background var(--transition-hover),
+                       transform   var(--transition-hover),
+                       box-shadow  var(--transition-hover);
+    }
+    .nav__link--cta::after {
+      display: none;   /* no underline on button */
+    }
+    .nav__link--cta:hover {
+      background:  #b8935a;
+      transform:   translateY(-1px);
+      box-shadow:  0 4px 14px rgba(201,169,110,0.35);
+    }
+
+    /* --------------------------------------------------------
+       6. HAMBURGER BUTTON (visible only on mobile)
+       -------------------------------------------------------- */
+    .nav__burger {
+      display:         none;            /* hidden on desktop */
+      flex-direction:  column;
+      justify-content: center;
+      gap:             5px;
+      width:           40px;
+      height:          40px;
+      background:      none;
+      border:          none;
+      cursor:          pointer;
+      padding:         8px;
+      z-index:         1001;
+    }
+
+    /* Three horizontal bars */
+    .nav__burger span {
+      display:         block;
+      width:           100%;
+      height:          2px;
+      background-color:var(--burger-color);
+      border-radius:   2px;
+      transition:      transform  var(--transition-hover),
+                       opacity    var(--transition-hover),
+                       background var(--transition-nav);
+    }
+
+    /* Animate burger → X when menu is open */
+    .nav__burger--open span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .nav__burger--open span:nth-child(2) {
+      opacity:   0;
+    }
+    .nav__burger--open span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* --------------------------------------------------------
+       7. MOBILE MENU OVERLAY
+       -------------------------------------------------------- */
+    .nav__mobile-menu {
+      position:         fixed;
+      top:              0;
+      right:            -100%;          /* off-screen */
+      width:            min(320px, 80vw);
+      height:           100vh;
+      background:       rgba(15, 15, 20, 0.97);
+      backdrop-filter:  blur(12px);
+      padding:          6rem 2.5rem 2.5rem;
+      transition:       right var(--transition-nav);
+      z-index:          999;
+      overflow-y:       auto;
+    }
+
+    /* Slide in when open */
+    .nav__mobile-menu--open {
+      right: 0;
+    }
+
+    /* Mobile menu links stacked vertically */
+    .nav__mobile-menu .nav__list {
+      flex-direction:  column;
+      align-items:     flex-start;
+      gap:             1.75rem;
+    }
+
+    .nav__mobile-menu .nav__link {
+      font-size:       1.1rem;
+    }
+
+    .nav__mobile-menu .nav__link--cta {
+      padding:         0.6rem 1.6rem;
+    }
+
+    /* Semi-transparent backdrop behind mobile menu */
+    .nav__overlay {
+      position:         fixed;
+      inset:            0;
+      background:       rgba(0, 0, 0, 0.5);
+      z-index:          998;
+      opacity:          0;
+      pointer-events:   none;
+      transition:       opacity var(--transition-nav);
+    }
+    .nav__overlay--visible {
+      opacity:          1;
+      pointer-events:   auto;
+    }
+
+    /* --------------------------------------------------------
+       8. DEMO HERO + SECTIONS (to demonstrate scroll behaviour)
+       -------------------------------------------------------- */
+    .hero {
+      height:            100vh;
+      display:           flex;
+      flex-direction:    column;
+      align-items:       center;
+      justify-content:   center;
+      text-align:        center;
+      padding:           2rem;
+      background:        linear-gradient(160deg, #1a1a2e 0%, #0f0f14 60%);
+      position:          relative;
+      overflow:          hidden;
+    }
+
+    /* Decorative gradient orb — subtle atmosphere */
+    .hero::before {
+      content:           '';
+      position:          absolute;
+      top:               -30%;
+      right:             -20%;
+      width:             700px;
+      height:            700px;
+      border-radius:     50%;
+      background:        radial-gradient(circle, rgba(201,169,110,0.12) 0%, transparent 70%);
+      pointer-events:    none;
+    }
+
+    .hero__title {
+      font-family:       var(--font-display);
+      font-size:         clamp(2.8rem, 7vw, 5.5rem);
+      font-weight:       700;
+      line-height:       1.1;
+      color:             #fff;
+      position:          relative;
+    }
+
+    .hero__title em {
+      color:             var(--accent);
+      font-style:        italic;
+    }
+
+    .hero__subtitle {
+      margin-top:        1.2rem;
+      font-size:         clamp(1rem, 2vw, 1.2rem);
+      color:             rgba(232,228,223,0.6);
+      max-width:         520px;
+      position:          relative;
+    }
+
+    .hero__scroll-hint {
+      position:          absolute;
+      bottom:            2.5rem;
+      left:              50%;
+      transform:         translateX(-50%);
+      display:           flex;
+      flex-direction:    column;
+      align-items:       center;
+      gap:               0.5rem;
+      color:             rgba(232,228,223,0.4);
+      font-size:         0.7rem;
+      letter-spacing:    0.18em;
+      text-transform:    uppercase;
+    }
+
+    /* Animated arrow */
+    .hero__scroll-hint .arrow {
+      width:             18px;
+      height:            18px;
+      border-right:      1.5px solid currentColor;
+      border-bottom:     1.5px solid currentColor;
+      transform:         rotate(45deg);
+      animation:         bounce-down 2s infinite;
+    }
+
+    @keyframes bounce-down {
+      0%, 100% { transform: rotate(45deg) translate(0, 0); opacity: 1; }
+      50%      { transform: rotate(45deg) translate(4px, 4px); opacity: 0.4; }
+    }
+
+    /* Demo content sections */
+    .section {
+      min-height:        100vh;
+      display:           flex;
+      flex-direction:    column;
+      align-items:       center;
+      justify-content:   center;
+      padding:           6rem 2rem;
+      text-align:        center;
+    }
+
+    .section:nth-child(even) {
+      background:        #131318;
+    }
+
+    .section__label {
+      font-size:         0.72rem;
+      letter-spacing:    0.22em;
+      text-transform:    uppercase;
+      color:             var(--accent);
+      margin-bottom:     1rem;
+    }
+
+    .section__title {
+      font-family:       var(--font-display);
+      font-size:         clamp(2rem, 4.5vw, 3rem);
+      color:             #fff;
+      margin-bottom:     1rem;
+    }
+
+    .section__body {
+      max-width:         600px;
+      color:             rgba(232,228,223,0.55);
+      font-size:         1.05rem;
+      line-height:       1.8;
+    }
+
+    /* --------------------------------------------------------
+       9. FOOTER
+       -------------------------------------------------------- */
+    footer {
+      text-align:        center;
+      padding:           3rem 1rem;
+      color:             rgba(232,228,223,0.3);
+      font-size:         0.82rem;
+      letter-spacing:    0.05em;
+      background:        #0a0a0e;
+    }
+
+    /* --------------------------------------------------------
+      10. RESPONSIVE — tablet & mobile breakpoints
+       -------------------------------------------------------- */
+    @media (max-width: 768px) {
+      /* Hide desktop menu, show burger */
+      .nav__list {
+        display: none;
+      }
+      .nav__burger {
+        display: flex;
+      }
+
+      .nav__inner {
+        padding: 1rem 1.25rem;
+      }
+    }
+  </style>
+</head>
+
+<!-- ============================================================
+     HTML SECTION
+     Semantic structure: <nav> with <header> role implied,
+     <main> wrapping content, <section> for each page,
+     <footer> at the bottom.
+     ============================================================ -->
+<body>
+
+  <!-- --------------------------------------------------------
+       NAVIGATION BAR
+       • .nav__inner      — flex container (logo + menu)
+       • .nav__list       — desktop <ul>
+       • .nav__burger     — hamburger button (3 <span> bars)
+       • .nav__mobile-menu— off-canvas panel for mobile
+       • .nav__overlay    — click-to-close backdrop
+       -------------------------------------------------------- -->
+  <nav id="mainNav" aria-label="Main navigation">
+    <div class="nav__inner">
+
+      <!-- Logo / brand link -->
+      <a href="#home" class="nav__logo">LogiCraft</a>
+
+      <!-- Desktop navigation links -->
+      <ul class="nav__list" role="menubar">
+        <li role="none"><a href="#home"      class="nav__link nav__link--active" role="menuitem">Home</a></li>
+        <li role="none"><a href="#about"     class="nav__link"                   role="menuitem">About</a></li>
+        <li role="none"><a href="#services"  class="nav__link"                   role="menuitem">Services</a></li>
+        <li role="none"><a href="#contact"   class="nav__link nav__link--cta"    role="menuitem">Contact</a></li>
+      </ul>
+
+      <!-- Hamburger toggle (mobile only) -->
+      <button class="nav__burger" id="burgerBtn" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu panel + backdrop overlay -->
+  <div class="nav__overlay" id="navOverlay"></div>
+  <aside class="nav__mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
+    <ul class="nav__list" role="menubar">
+      <li role="none"><a href="#home"      class="nav__link" role="menuitem">Home</a></li>
+      <li role="none"><a href="#about"     class="nav__link" role="menuitem">About</a></li>
+      <li role="none"><a href="#services"  class="nav__link" role="menuitem">Services</a></li>
+      <li role="none"><a href="#contact"   class="nav__link nav__link--cta" role="menuitem">Contact</a></li>
+    </ul>
+  </aside>
+
+  <!-- --------------------------------------------------------
+       MAIN CONTENT — demo sections so scrolling can be tested
+       -------------------------------------------------------- -->
+  <main>
+
+    <!-- Hero -->
+    <section id="home" class="hero">
+      <h1 class="hero__title">Build Smarter. <em>Create Faster. </em><br/>Grow Stronger. </h1>
+      <p class="hero__subtitle">Welcome to my digital space where ideas turn into real solutions. I design and develop modern, user-friendly web experiences that help individuals and businesses stand out online. Whether you need a website, application, or creative digital solution — you’re in the right place.</p>
+      <div class="hero__scroll-hint">
+        <span>Scroll</span>
+        <div class="arrow"></div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="section">
+      <p class="section__label">About</p>
+      <h2 class="section__title">About Me</h2>
+      <p class="section__body">
+        I’m a passionate web creator focused on building clean, efficient, and user-friendly digital products. I enjoy turning complex problems into simple, beautiful solutions. My work combines thoughtful design with solid technical implementation to create experiences that users enjoy and businesses trust. <br>  
+        I continuously learn new technologies and tools to stay ahead and deliver better results. My goal is not just to build projects — but to build value.
+      </p>
+    </section>
+
+    <!-- Services -->
+    <section id="services" class="section">
+      <p class="section__label">Services</p>
+      <h2 class="section__title">What we offer</h2>
+      <p class="section__body">
+        I offer practical and modern digital services tailored to your needs. Such as - Website Development, UI / UX Design, Frontend Development, Frontend Development & Optimization and Maintenance
+      </p>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="section">
+      <p class="section__label">Contact</p>
+      <h2 class="section__title">Get In Touch</h2>
+      <p class="section__body">
+        Have a project in mind? We'd love to hear about it. Drop us a line and let's
+        explore what we can build together — no commitment, just a conversation.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 Lumière Studio. All rights reserved.</p>
+  </footer>
+
+  <!-- ============================================================
+       JAVASCRIPT SECTION
+       Responsibilities:
+         1. Scroll-state toggle  — add / remove .nav--scrolled
+         2. Scroll-spy           — highlight the active nav link
+         3. Hamburger toggle     — open / close mobile menu
+         4. Mobile link click    — close mobile menu on navigate
+       ============================================================ -->
+  <script>
+    // --------------------------------------------------------
+    // 1. SCROLL-STATE TOGGLE
+    //    When the user scrolls more than 50 px down, we add
+    //    the class .nav--scrolled to <nav>. CSS handles the
+    //    visual transition (background, shadow, text colour).
+    // --------------------------------------------------------
+    (function scrollStateToggle() {
+      const nav          = document.getElementById('mainNav');
+      const SCROLL_LIMIT = 50; // px threshold
+
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > SCROLL_LIMIT) {
+          nav.classList.add('nav--scrolled');
+        } else {
+          nav.classList.remove('nav--scrolled');
+        }
+      }, { passive: true }); // passive for better scroll perf
+    })();
+
+    // --------------------------------------------------------
+    // 2. SCROLL-SPY — active link highlighting
+    //    Uses IntersectionObserver to detect which section is
+    //    currently in view and marks the corresponding nav link.
+    // --------------------------------------------------------
+    (function scrollSpy() {
+      const sections    = document.querySelectorAll('main section[id]');
+      const navLinks    = document.querySelectorAll('.nav__link[href^="#"]');
+      // Collect ALL nav links (desktop + mobile) for consistent active state
+      const allLinks    = document.querySelectorAll('a[href^="#"]');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const activeId = entry.target.id;
+
+          // Remove active class from every link, then add to matching ones
+          allLinks.forEach((link) => {
+            const href = link.getAttribute('href').replace('#', '');
+            if (href === activeId) {
+              link.classList.add('nav__link--active');
+            } else {
+              link.classList.remove('nav__link--active');
+            }
+          });
+        });
+      }, {
+        // Trigger when 40% of the section is visible
+        threshold: 0.4,
+        // Negative top root margin so the nav doesn't overlap detection
+        rootMargin: '-60px 0px -40% 0px'
+      });
+
+      sections.forEach((section) => observer.observe(section));
+    })();
+
+    // --------------------------------------------------------
+    // 3. HAMBURGER TOGGLE
+    //    Opens / closes the mobile side-panel and backdrop.
+    //    Also updates aria-expanded for accessibility.
+    // --------------------------------------------------------
+    (function hamburgerToggle() {
+      const burger      = document.getElementById('burgerBtn');
+      const mobileMenu  = document.getElementById('mobileMenu');
+      const overlay     = document.getElementById('navOverlay');
+
+      function openMenu() {
+        burger.classList.add('nav__burger--open');
+        mobileMenu.classList.add('nav__mobile-menu--open');
+        overlay.classList.add('nav__overlay--visible');
+        burger.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden'; // prevent background scroll
+      }
+
+      function closeMenu() {
+        burger.classList.remove('nav__burger--open');
+        mobileMenu.classList.remove('nav__mobile-menu--open');
+        overlay.classList.remove('nav__overlay--visible');
+        burger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = ''; // restore scrolling
+      }
+
+      // Toggle on burger click
+      burger.addEventListener('click', () => {
+        const isOpen = burger.classList.contains('nav__burger--open');
+        isOpen ? closeMenu() : openMenu();
+      });
+
+      // Close when backdrop is clicked
+      overlay.addEventListener('click', closeMenu);
+    })();
+
+    // --------------------------------------------------------
+    // 4. MOBILE LINK CLICK — close menu on navigation
+    //    Any link inside the mobile menu will close the panel
+    //    after being clicked (the browser handles the scroll).
+    // --------------------------------------------------------
+    (function mobileMenuClose() {
+      const mobileMenu  = document.getElementById('mobileMenu');
+      const burger      = document.getElementById('burgerBtn');
+      const overlay     = document.getElementById('navOverlay');
+
+      mobileMenu.querySelectorAll('.nav__link').forEach((link) => {
+        link.addEventListener('click', () => {
+          burger.classList.remove('nav__burger--open');
+          mobileMenu.classList.remove('nav__mobile-menu--open');
+          overlay.classList.remove('nav__overlay--visible');
+          burger.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
